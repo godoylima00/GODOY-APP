@@ -1407,6 +1407,11 @@ window.saveConfirmedTransaction = function(e) {
       appState.currentMonth = txMonth;
     }
     showToast(`Gasto de ${formatCurrency(amount)} em ${merchant} registrado!`);
+
+    // Envia automaticamente para o Google Planilhas (se Webhook estiver configurado)
+    if (window.SheetsSyncService && typeof window.SheetsSyncService.pushTransactionToGoogleSheets === 'function') {
+      window.SheetsSyncService.pushTransactionToGoogleSheets(newTx);
+    }
   }
 
   saveState();

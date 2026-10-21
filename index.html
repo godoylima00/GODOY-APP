@@ -196,8 +196,13 @@
             </button>
           </div>
 
-          <!-- Exportar CSV / PDF -->
-          <div class="flex items-center gap-2 no-print">
+          <!-- Google Sheets Sync + Exportar CSV / PDF -->
+          <div class="flex flex-wrap items-center gap-2 no-print">
+            <button onclick="openGoogleSheetsModal('import')"
+              class="px-3.5 py-2.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+              title="Importar ou Sincronizar com Google Planilhas">
+              <span>🔗 Sincronizar Google Sheets</span>
+            </button>
             <button onclick="exportMonthCSV()"
               class="px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition"
               title="Exportar Tabelas para Excel (CSV)">
@@ -218,6 +223,32 @@
           </div>
         </div>
       </header>
+
+      <!-- Barra de Status de Sincronização com Google Sheets -->
+      <div class="mb-6 px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-sm no-print">
+        <div class="flex items-center gap-2.5 text-xs">
+          <span id="sheets-sync-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
+          <span id="sheets-sync-status-text" class="font-semibold text-slate-600 dark:text-slate-300">
+            Última sincronização com Google Sheets: Ainda não sincronizado
+          </span>
+          <span id="sheets-webhook-active-badge"
+            class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-500 border border-emerald-500/20">
+            Envio Automático Ativo
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="quickRefreshFromGoogleSheets()"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm">
+            <i id="sheets-quick-refresh-icon" data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>🔄 Atualizar da Planilha</span>
+          </button>
+          <button onclick="openGoogleSheetsModal('webhook')"
+            class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition">
+            Configurar Webhook
+          </button>
+        </div>
+      </div>
 
       <!-- ==================================================================
            4 CARDS DE RESUMO NO TOPO (Receita, Despesa, Saldo, Maior Vilão)
@@ -797,6 +828,195 @@
   </div>
 
   <!-- ====================================================================
+       MODAL DE INTEGRAÇÃO E SINCRONIZAÇÃO COM GOOGLE PLANILHAS (GOOGLE SHEETS)
+       ==================================================================== -->
+  <div id="google-sheets-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="card-surface w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[92vh] flex flex-col">
+
+      <!-- Cabeçalho do Modal -->
+      <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold text-lg">
+            📊
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base">Sincronização Bidirecional • Google Planilhas</h3>
+            <p class="text-xs text-slate-400">Importe gastos da sua planilha para os setores ou envie automaticamente cada compra</p>
+          </div>
+        </div>
+        <button onclick="closeGoogleSheetsModal()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Abas Internas do Modal -->
+      <div class="px-6 pt-4">
+        <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <button type="button" id="sheets-tab-btn-import" onclick="switchSheetsModalTab('import')"
+            class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition flex items-center justify-center gap-1.5">
+            <span>🔗 1. Link da Planilha</span>
+          </button>
+          <button type="button" id="sheets-tab-btn-paste" onclick="switchSheetsModalTab('paste')"
+            class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition flex items-center justify-center gap-1.5">
+            <span>📋 2. Colar Células (Ctrl+V)</span>
+          </button>
+          <button type="button" id="sheets-tab-btn-webhook" onclick="switchSheetsModalTab('webhook')"
+            class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition flex items-center justify-center gap-1.5">
+            <span>🚀 3. Envio Automático (Webhook)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Corpo Rolável -->
+      <div class="p-6 overflow-y-auto space-y-5">
+
+        <!-- ABA 1: IMPORTAR VIA LINK PÚBLICO / CSV DO GOOGLE SHEETS -->
+        <div id="sheets-tab-panel-import" class="space-y-4">
+          <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1.5">
+            <div class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+              <span>Conversão Automática de Link + Prevenção de Duplicatas</span>
+            </div>
+            <p class="text-slate-600 dark:text-slate-300">
+              Basta colar o link normal da sua planilha (<code class="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10">.../edit#gid=0</code>) compartilhada como <strong>"Qualquer pessoa com o link pode visualizar"</strong>. O sistema converte automaticamente para leitura CSV e classifica cada linha na tabela do respectivo setor (iFood &rarr; Delivery, Uber &rarr; Transporte, etc.).
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+              URL da Planilha do Google Sheets (Pública ou CSV)
+            </label>
+            <input id="sheets-url-input" type="url"
+              placeholder="https://docs.google.com/spreadsheets/d/SEU_ID_DA_PLANILHA/edit#gid=0"
+              class="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+            <button type="button" onclick="switchSheetsModalTab('paste')"
+              class="text-xs font-semibold text-emerald-500 hover:underline">
+              Sua planilha é privada? Cole as células com Ctrl+V aqui &rarr;
+            </button>
+            <button type="button" onclick="syncFromGoogleSheetsUrl(null, true)"
+              class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition">
+              <i data-lucide="download-cloud" class="w-4 h-4"></i>
+              <span>Sincronizar e Importar Agora</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ABA 2: COLAR CÉLULAS DIRETAMENTE (CTRL+V DO GOOGLE SHEETS / EXCEL) -->
+        <div id="sheets-tab-panel-paste" class="hidden space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">
+                Cole aqui as linhas copiadas do Google Sheets ou Excel (Ctrl+V)
+              </label>
+              <p class="text-[11px] text-slate-400">
+                Reconhece colunas: Data | Estabelecimento/Descrição | Categoria/Setor | Forma de Pagamento | Valor
+              </p>
+            </div>
+            <button type="button" onclick="fillSampleGoogleSheetsPaste()"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-500/15 text-purple-500 hover:bg-purple-500/25 transition">
+              ✨ Preencher Exemplo de Teste
+            </button>
+          </div>
+
+          <textarea id="sheets-paste-textarea" rows="5"
+            oninput="previewPastedSheetCells()"
+            placeholder="Exemplo:&#10;21/10/2026   iFood Burger King   Delivery   PIX   R$ 54,90&#10;20/10/2026   Uber Corrida Centro   Transporte   Cartão de Crédito   R$ 29,40"
+            class="w-full p-3.5 rounded-xl text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+
+          <!-- Pré-visualização do Mapeamento Inteligente -->
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Pré-visualização do Mapeamento por Setor
+              </span>
+              <span id="sheets-paste-count" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-500">
+                0 linhas identificadas
+              </span>
+            </div>
+            <div id="sheets-paste-preview">
+              <div class="text-xs text-slate-400 text-center py-4">
+                Cole as células da sua planilha acima para visualizar o mapeamento automático por setor.
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="importFromPastedSheetCells()"
+              class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span>Importar para as Tabelas de Setor</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ABA 3: ENVIO AUTOMÁTICO DO SITE PARA O GOOGLE PLANILHAS (WEBHOOK) -->
+        <div id="sheets-tab-panel-webhook" class="hidden space-y-4">
+          <form onsubmit="saveWebhookSettings(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                URL do Webhook (Google Apps Script Web App)
+              </label>
+              <input id="sheets-webhook-input" type="url"
+                placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                class="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              <p class="text-[11px] text-slate-400 mt-1">
+                Sempre que você adicionar um novo gasto no site (via Print OCR ou Manual), ele será enviado automaticamente via <code>POST</code> JSON para sua planilha.
+              </p>
+            </div>
+
+            <label class="flex items-center gap-2.5 cursor-pointer select-none p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/60">
+              <input id="sheets-autopush-checkbox" type="checkbox" checked class="w-4 h-4 accent-emerald-600 rounded" />
+              <span class="text-xs font-semibold">
+                Enviar automaticamente cada novo gasto registrado no site para o Google Planilhas
+              </span>
+            </label>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="toggleAppsScriptCodeDrawer()"
+                  class="px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-600/15 hover:bg-purple-600/25 text-purple-600 dark:text-purple-300 border border-purple-500/30 transition flex items-center gap-1.5">
+                  <i data-lucide="code-2" class="w-4 h-4"></i>
+                  <span>Ver Código do Google Apps Script</span>
+                </button>
+                <button type="button" onclick="pushCurrentMonthToGoogleSheets()"
+                  class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-200 dark:bg-slate-800 hover:opacity-90 transition flex items-center gap-1.5">
+                  <i data-lucide="send" class="w-3.5 h-3.5 text-emerald-500"></i>
+                  <span>Enviar Mês Atual Inteiro</span>
+                </button>
+              </div>
+
+              <button type="submit"
+                class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition">
+                Salvar Configuração
+              </button>
+            </div>
+          </form>
+
+          <!-- Gaveta Expansível com o Código Pronto do Google Apps Script -->
+          <div id="apps-script-code-drawer" class="hidden space-y-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-purple-500">
+                📋 Cole em sua Planilha: Extensões &gt; Apps Script &gt; Implantar como App da Web
+              </span>
+              <button type="button" onclick="copyAppsScriptCode()"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition flex items-center gap-1">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copiar Código</span>
+              </button>
+            </div>
+            <pre id="apps-script-code-content"
+              class="p-3.5 rounded-xl bg-slate-950 text-emerald-300 text-[11px] font-mono overflow-x-auto max-h-60 border border-slate-800"></pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
        LIGHTBOX PARA VISUALIZAR O PRINT ORIGINAL ANEXADO
        ==================================================================== -->
   <div id="receipt-lightbox" onclick="closeReceiptLightbox()"
@@ -816,5 +1036,6 @@
   <!-- Scripts da Aplicação -->
   <script src="ocr-engine.js"></script>
   <script src="app.js"></script>
+  <script src="sheets-sync.js"></script>
 </body>
 </html>
