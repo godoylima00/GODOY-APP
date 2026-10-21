@@ -1642,7 +1642,7 @@ window.exportMonthCSV = function() {
 
   const link = document.createElement('a');
   link.href = url;
-  link.download = `GodoyFin_Gabriel_Mirela_${appState.currentMonth}.csv`;
+  link.download = `Nosso_Bolso_Gabriel_Mirela_${appState.currentMonth}.csv`;
   link.click();
   URL.revokeObjectURL(url);
   showToast('Planilha Excel (CSV) exportada com sucesso!');
@@ -1676,7 +1676,7 @@ window.exportBackupJSON = function() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `GodoyFin_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `Nosso_Bolso_Backup_${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('Backup completo salvo com sucesso!');
@@ -1782,6 +1782,12 @@ function handleImageFile(file) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.title = 'Nosso Bolso';
+  try {
+    if (!window.location.hash || window.location.hash === '#') {
+      window.history.replaceState(null, 'Nosso Bolso', '#nosso-bolso');
+    }
+  } catch (e) {}
   loadState();
   setupUploadAndPasteListeners();
   renderAll();

@@ -18,13 +18,13 @@ let sheetsConfig = {
 };
 
 const GOOGLE_APPS_SCRIPT_TEMPLATE = `/**
- * GodoyFin - Script de Integração Bidirecional com Google Planilhas (Gabriel & Mirela)
+ * Nosso Bolso - Script de Integração Bidirecional com Google Planilhas (Gabriel & Mirela)
  * Como usar:
  * 1. Na sua Planilha do Google, clique em Extensões > Apps Script
  * 2. Apague tudo, cole este código e clique em Salvar
  * 3. Clique em "Implantar" > "Nova implantação" > Tipo: "App da Web"
  * 4. Em "Quem pode acessar", selecione "Qualquer pessoa" e clique em Implantar
- * 5. Copie a URL gerada e cole no campo Webhook do GodoyFin!
+ * 5. Copie a URL gerada e cole no campo Webhook do Nosso Bolso!
  */
 
 function doPost(e) {
@@ -65,7 +65,7 @@ function getOrCreateSheet(ss, name) {
   var sheet = ss.getSheetByName(cleanName);
   if (!sheet) {
     sheet = ss.insertSheet(cleanName);
-    var headers = ['Data', 'Responsável', 'Estabelecimento / Despesa', 'Categoria / Setor', 'Forma de Pagamento', 'Valor (R$)', 'ID GodoyFin'];
+    var headers = ['Data', 'Responsável', 'Estabelecimento / Despesa', 'Categoria / Setor', 'Forma de Pagamento', 'Valor (R$)', 'ID Nosso Bolso'];
     sheet.appendRow(headers);
     var headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setBackground('#820ad1').setFontColor('#ffffff').setFontWeight('bold');

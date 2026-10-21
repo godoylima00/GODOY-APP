@@ -497,7 +497,7 @@ async function recognizeReceiptFromImage(imageDataUrl, onProgress = () => {}) {
       const base64Clean = imageDataUrl.split(',')[1];
       const mimeType = imageDataUrl.substring(imageDataUrl.indexOf(':') + 1, imageDataUrl.indexOf(';')) || 'image/png';
 
-      const systemPrompt = `Você é o motor de visão computacional financeira do aplicativo GodoyFin (Gabriel & Mirela).
+      const systemPrompt = `Você é o motor de visão computacional financeira do aplicativo Nosso Bolso (Gabriel & Mirela).
 Analise a imagem enviada e identifique qual dos DOIS CENÁRIOS abaixo ela representa, retornando ESTRITAMENTE um JSON válido (sem markdown extra):
 
 CENÁRIO A: Print de Compra Única (iFood, Uber, 99, Comprovante PIX, Nota Fiscal, Recibo de Cartão)
@@ -836,7 +836,7 @@ function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026
 
   ctx.font = '15px Arial, sans-serif';
   ctx.fillStyle = '#64748b';
-  ctx.fillText('Comprovante autenticado digitalmente • GodoyFin OCR', 32, 640);
+  ctx.fillText('Comprovante autenticado digitalmente • Nosso Bolso OCR', 32, 640);
 
   return canvas.toDataURL('image/png');
 }
