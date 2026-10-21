@@ -490,12 +490,12 @@ function renderCoupleHorizontalBoards(summary) {
     const isHorizontalItems = appState.itemsDisplayMode === 'horizontal';
 
     return `
-      <div class="card-surface flex-1 min-w-[340px] border-t-4 ${accentBorder} flex flex-col justify-between overflow-hidden">
+      <div class="card-surface flex-1 min-w-[340px] flex flex-col justify-between overflow-hidden">
         <div>
           <!-- Cabeçalho do Bloco Individual -->
-          <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div class="p-5 border-b border-slate-200/70 dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl">
+              <div class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center text-xl">
                 ${emoji}
               </div>
               <div>
@@ -508,7 +508,7 @@ function renderCoupleHorizontalBoards(summary) {
 
             <div class="flex items-center gap-2 no-print">
               <button onclick="openQuickManualModal('mercado', '${personKey}')"
-                class="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600/15 hover:bg-purple-600/25 text-purple-600 dark:text-purple-300 transition flex items-center gap-1">
+                class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-600/15 hover:bg-purple-600/25 text-purple-600 dark:text-purple-300 transition flex items-center gap-1">
                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                 <span>+ Despesa</span>
               </button>
@@ -1649,12 +1649,27 @@ window.exportMonthCSV = function() {
 };
 
 window.exportPDFReport = function() {
+  const menu = document.getElementById('export-dropdown-menu');
+  if (menu) menu.classList.add('hidden');
   appState.activeSectorFilter = 'all';
   renderAll();
   setTimeout(() => {
     window.print();
   }, 250);
 };
+
+window.toggleExportMenu = function(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('export-dropdown-menu');
+  if (menu) menu.classList.toggle('hidden');
+};
+
+document.addEventListener('click', () => {
+  const menu = document.getElementById('export-dropdown-menu');
+  if (menu && !menu.classList.contains('hidden')) {
+    menu.classList.add('hidden');
+  }
+});
 
 window.exportBackupJSON = function() {
   const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
