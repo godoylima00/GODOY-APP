@@ -1784,8 +1784,8 @@ function handleImageFile(file) {
 document.addEventListener('DOMContentLoaded', () => {
   document.title = 'Nosso Bolso';
   try {
-    if (!window.location.hash || window.location.hash === '#') {
-      window.history.replaceState(null, 'Nosso Bolso', '#nosso-bolso');
+    if (window.location.hash === '#nosso-bolso') {
+      window.history.replaceState(null, 'Nosso Bolso', window.location.pathname + window.location.search);
     }
   } catch (e) {}
   loadState();
