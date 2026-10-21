@@ -1,10 +1,9 @@
 /* ==========================================================================
-   GodoyFin - Motor de Visão Computacional / OCR & Classificador Inteligente
-   Suporta:
-   1. Tesseract.js (OCR Local no Navegador com pré-processamento de contraste)
-   2. Google Gemini Vision API (Opcional, caso o usuário insira chave API)
-   3. Heurísticas NLP para Comprovantes Brasileiros (iFood, Uber, 99, PIX, NFC-e)
-   4. Gerador de Prints Reais em Canvas para demonstração rápida
+   GodoyFin - Motor de Visão Computacional: Google Gemini Vision (gemini-2.5-flash)
+   + Fallback Automático Local (Tesseract.js + Parser Nativo)
+   Suporta 2 Cenários de Leitura de Imagem:
+   - Cenário A: Print de Compra Única (iFood, Uber, 99, PIX, Nota Fiscal)
+   - Cenário B: Print da Planilha Mensal (Tabela Lado a Lado Gabriel & Mirela)
    ========================================================================== */
 
 const SECTOR_DICTIONARY = {
@@ -37,8 +36,8 @@ const SECTOR_DICTIONARY = {
   },
   mercado: {
     id: 'mercado',
-    name: 'Mercado & Casa',
-    emoji: '🛒',
+    name: 'Mercado, Casa & Contas',
+    emoji: '🏠',
     color: '#10b981',
     keywords: [
       'apartamento', 'apto', 'moradia', 'financiamento', 'prestacao', 'prestação',
@@ -55,8 +54,8 @@ const SECTOR_DICTIONARY = {
   },
   compras: {
     id: 'compras',
-    name: 'Compras, Cartões & Lazer',
-    emoji: '🛍️',
+    name: 'Cartões, Bancos & Compras',
+    emoji: '💳',
     color: '#8b5cf6',
     keywords: [
       'cartao', 'cartão', 'nubank', 'bradesco', 'itau', 'itaú', 'santander', 'inter', 'c6', 'fatura',
@@ -87,6 +86,27 @@ const SECTOR_DICTIONARY = {
 };
 
 /**
+ * Converte nomes de setor retornados pelo Gemini ("Delivery", "Transporte", "Mercado", "Outros", etc.)
+ * para os IDs internos de tabela do aplicativo
+ */
+function normalizeGeminiSector(rawSector = '', merchantName = '', fullText = '') {
+  const s = String(rawSector || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+  if (SECTOR_DICTIONARY[s]) return s;
+  if (/delivery|alimenta|ifood|restaurante|lanche/.test(s)) return 'delivery';
+  if (/transporte|mobilidade|uber|99|combustivel/.test(s)) return 'transporte';
+  if (/mercado|casa|moradia|conta|condominio|apartamento|luz|internet/.test(s)) return 'mercado';
+  if (/saude|farmacia|medico|academia/.test(s)) return 'saude';
+  if (/cartao|banco|compra|lazer/.test(s)) return 'compras';
+
+  return classifyMerchantSector(merchantName, `${rawSector} ${fullText}`);
+}
+
+/**
  * Classifica automaticamente um estabelecimento ou texto em um dos 5 setores
  */
 function classifyMerchantSector(merchantName = '', fullText = '') {
@@ -95,8 +115,7 @@ function classifyMerchantSector(merchantName = '', fullText = '') {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
-  // Prioridade para o nome do estabelecimento primeiro
-  const normMerchant = merchantName
+  const normMerchant = String(merchantName || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
@@ -110,7 +129,6 @@ function classifyMerchantSector(merchantName = '', fullText = '') {
     }
   }
 
-  // Fallback buscando no texto completo do comprovante
   for (const [sectorKey, sectorData] of Object.entries(SECTOR_DICTIONARY)) {
     for (const kw of sectorData.keywords) {
       const normKw = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -120,14 +138,14 @@ function classifyMerchantSector(merchantName = '', fullText = '') {
     }
   }
 
-  return 'compras'; // Categoria padrão caso não reconheça
+  return 'compras';
 }
 
 /**
  * Identifica a Forma de Pagamento no texto extraído do comprovante
  */
 function extractPaymentMethod(text = '') {
-  const lower = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const lower = String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   if (/\bpix\b|chave pix|transferencia pix|qr code pix|pagamento via pix/.test(lower)) {
     return 'PIX';
@@ -138,7 +156,7 @@ function extractPaymentMethod(text = '') {
   if (/debito|maestro|visa electron|elo debito/.test(lower)) {
     return 'Cartão de Débito';
   }
-  if (/credito|mastercard|visa|elo|amex|hipercard|nubank|itaucard|parcelado|1x de|fatura/.test(lower)) {
+  if (/credito|mastercard|visa|elo|amex|hipercard|nubank|itaucard|bradesco|cartao|parcelado|1x de|fatura/.test(lower)) {
     return 'Cartão de Crédito';
   }
   if (/dinheiro|especie|troco/.test(lower)) {
@@ -148,9 +166,126 @@ function extractPaymentMethod(text = '') {
 }
 
 /**
- * Extrai Valor Total (R$), Data, Hora, Estabelecimento, Categoria e Pagamento do texto bruto do OCR
+ * Converte números flexíveis (ex: "R$3 095,00", "3872", "45,90")
+ */
+function parseFlexibleOCRNumber(raw) {
+  if (typeof raw === 'number') return isNaN(raw) ? 0 : Math.abs(raw);
+  let s = String(raw || '').replace(/R\$/gi, '').replace(/\s+/g, '').trim();
+  if (!s) return 0;
+  if (s.includes(',') && s.includes('.')) {
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (s.includes(',')) {
+    s = s.replace(',', '.');
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+    s = s.replace(/\./g, '');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : Math.abs(n);
+}
+
+/**
+ * Verifica se o texto bruto do OCR local (Tesseract) é um Print da Planilha Mensal (Gabriel & Mirela)
+ */
+function tryParseCoupleTableFromOCRText(rawText = '') {
+  const upper = rawText.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const hasCoupleMarkers =
+    upper.includes('SALARIO GABRIEL') ||
+    upper.includes('SALARIO MIRELA') ||
+    upper.includes('DESPESAS GABRIEL') ||
+    upper.includes('DESPESAS MIRELA');
+
+  if (!hasCoupleMarkers) return null;
+
+  let salarioGabriel = 0;
+  let salarioMirela = 0;
+  const despesasGabriel = [];
+  const despesasMirela = [];
+
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+  // Extrai salários na linha de SALÁRIO GABRIEL / SALÁRIO MIRELA ou na linha imediatamente abaixo
+  for (let i = 0; i < lines.length; i++) {
+    const lineNorm = lines[i].toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (lineNorm.includes('SALARIO GABRIEL') || lineNorm.includes('SALARIO MIRELA')) {
+      const nextLine = lines[i + 1] || '';
+      // Procura os valores numéricos na linha abaixo (ex: "3872   R$3 095,00")
+      const matches = nextLine.match(/(?:R\$\s*)?\d[\d\s\.]*(?:,\d{2})?/g) || [];
+      const nums = matches.map(m => parseFlexibleOCRNumber(m)).filter(n => n > 100);
+      if (lineNorm.includes('SALARIO GABRIEL') && lineNorm.includes('SALARIO MIRELA')) {
+        if (nums[0]) salarioGabriel = nums[0];
+        if (nums[1]) salarioMirela = nums[1];
+      } else if (lineNorm.includes('SALARIO GABRIEL') && nums[0]) {
+        salarioGabriel = nums[0];
+      } else if (lineNorm.includes('SALARIO MIRELA') && nums[0]) {
+        salarioMirela = nums[0];
+      }
+    }
+  }
+
+  // Extrai linhas de despesas abaixo de DESPESAS GABRIEL / DESPESAS MIRELA até TOTAL DE GASTOS
+  let inExpensesSection = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineNorm = line.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    if (lineNorm.includes('DESPESAS GABRIEL') || lineNorm.includes('DESPESAS MIRELA')) {
+      inExpensesSection = true;
+      continue;
+    }
+    if (!inExpensesSection) continue;
+    if (lineNorm.includes('TOTAL DE GASTOS')) break;
+
+    // Procura pares (Nome + Valor) na mesma linha (suporta 1 ou 2 pares lado a lado na mesma linha!)
+    const pairRegex = /([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9\s]{1,28}?)\s+(?:R\$\s*)?(\d{1,3}(?:[\.\s]\d{3})*(?:,\d{2})|\d+(?:,\d{2})?)/g;
+    const foundPairs = [];
+    let match;
+    while ((match = pairRegex.exec(line)) !== null) {
+      const desc = match[1].replace(/\bR\$$/i, '').trim();
+      const val = parseFlexibleOCRNumber(match[2]);
+      if (desc && !/^(DESPESA|VALOR|TOTAL)/i.test(desc) && val > 0) {
+        foundPairs.push({
+          descricao: desc,
+          valor: val,
+          setor: classifyMerchantSector(desc, '')
+        });
+      }
+    }
+
+    if (foundPairs.length >= 2) {
+      despesasGabriel.push(foundPairs[0]);
+      despesasMirela.push(foundPairs[1]);
+    } else if (foundPairs.length === 1) {
+      despesasGabriel.push(foundPairs[0]);
+    }
+  }
+
+  if (salarioGabriel > 0 || salarioMirela > 0 || despesasGabriel.length > 0 || despesasMirela.length > 0) {
+    return {
+      tipo: 'planilha_casal',
+      salarioGabriel,
+      salarioMirela,
+      despesasGabriel,
+      despesasMirela
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Extrai dados de um comprovante de compra única via texto bruto do OCR (Fallback)
  */
 function parseReceiptText(rawText = '') {
+  // Primeiro verifica se o print é da Planilha Mensal (Gabriel & Mirela)
+  const coupleTable = tryParseCoupleTableFromOCRText(rawText);
+  if (coupleTable) {
+    return coupleTable;
+  }
+
   const lines = rawText
     .split(/\r?\n/)
     .map(l => l.trim())
@@ -158,9 +293,7 @@ function parseReceiptText(rawText = '') {
 
   const fullText = lines.join('\n');
 
-  // 1. EXTRAÇÃO DE VALOR TOTAL
   let amount = 0;
-  // Procura padrões explícitos de Total primeiro
   const totalRegexes = [
     /(?:total\s*(?:pago|da\s*compra|do\s*pedido|a\s*pagar|geral)?|valor\s*(?:total|da\s*corrida|transferido|pago|do\s*pix)?)[^\d\n]{0,25}(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}|\d+\.\d{2})/gi,
     /r\$\s*(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}|\d+\.\d{2})/gi,
@@ -181,11 +314,9 @@ function parseReceiptText(rawText = '') {
   }
 
   if (foundAmounts.length > 0) {
-    // Em notas e recibos de pedido (iFood/Mercado), o total costuma ser o maior valor (soma dos itens + taxa)
     amount = Math.max(...foundAmounts);
   }
 
-  // 2. EXTRAÇÃO DE DATA E HORA
   const now = new Date();
   let dateStr = now.toISOString().slice(0, 10);
   let timeStr = now.toTimeString().slice(0, 5);
@@ -195,9 +326,7 @@ function parseReceiptText(rawText = '') {
     jul: '07', ago: '08', set: '09', out: '10', nov: '11', dez: '12'
   };
 
-  // Formato DD/MM/YYYY ou DD/MM/YY
   const dateNumericMatch = fullText.match(/\b(0?[1-9]|[12]\d|3[01])[\/\-](0?[1-9]|1[0-2])[\/\-](20\d{2}|\d{2})\b/);
-  // Formato "21 OUT 2026" ou "21 de outubro de 2026"
   const dateTextMatch = fullText.match(/\b(0?[1-9]|[12]\d|3[01])\s*(?:de\s*)?(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\s*(?:de\s*)?(20\d{2})?\b/i);
 
   if (dateNumericMatch) {
@@ -214,15 +343,12 @@ function parseReceiptText(rawText = '') {
     dateStr = `${year}-${month}-${day}`;
   }
 
-  // Hora HH:MM
   const timeMatch = fullText.match(/\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b/);
   if (timeMatch) {
     timeStr = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2].padStart(2, '0')}`;
   }
 
-  // 3. EXTRAÇÃO DE NOME DO ESTABELECIMENTO / APP
   let merchant = '';
-
   const knownBrands = [
     { pattern: /\bifood\b|ifd\*/i, label: 'iFood' },
     { pattern: /\brappi\b/i, label: 'Rappi' },
@@ -252,7 +378,6 @@ function parseReceiptText(rawText = '') {
     { pattern: /\boutback\b/i, label: 'Outback Steakhouse' }
   ];
 
-  // Procura também por "Para:", "Recebedor:", "Favorecido:", "Estabelecimento:", "Restaurante:"
   const receiverMatch = fullText.match(/(?:para|recebedor|favorecido|estabelecimento|destino|restaurante|loja)\s*[:\-]?\s*([A-Za-zÀ-ÿ0-9\s&\.\-]{3,40})/i);
 
   for (const b of knownBrands) {
@@ -270,7 +395,6 @@ function parseReceiptText(rawText = '') {
   }
 
   if (!merchant) {
-    // Pega a primeira linha significativa que não seja "Comprovante", "Recibo", data ou valor
     const ignoredHeader = /comprovante|recibo|transferencia|pagamento|pix|nota fiscal|danfe|extrato|detalhes|pedido concluido|corrida/i;
     for (const line of lines.slice(0, 6)) {
       if (!ignoredHeader.test(line) && !/r\$|\d{2}\/\d{2}/i.test(line) && line.length >= 3 && line.length <= 42) {
@@ -280,19 +404,19 @@ function parseReceiptText(rawText = '') {
     }
   }
 
-  if (!merchant) {
-    merchant = 'Estabelecimento Identificado';
-  }
+  if (!merchant) merchant = 'Estabelecimento Identificado';
 
-  // 4. CATEGORIA SUGERIDA E FORMA DE PAGAMENTO
+  const owner = /mirela/i.test(fullText) ? 'mirela' : 'gabriel';
   const sector = classifyMerchantSector(merchant, fullText);
   const paymentMethod = extractPaymentMethod(fullText);
 
   return {
+    tipo: 'compra_unica',
     amount: amount > 0 ? amount : 0,
     date: dateStr,
     time: timeStr,
     merchant: merchant.slice(0, 50),
+    owner,
     sector,
     paymentMethod,
     rawText
@@ -300,14 +424,14 @@ function parseReceiptText(rawText = '') {
 }
 
 /**
- * Pré-processa a imagem em um Canvas (escala + contraste) para melhorar leitura do Tesseract.js
+ * Pré-processa a imagem em um Canvas para melhorar nitidez no fallback Tesseract.js
  */
 async function preprocessImageForOCR(dataUrl) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const maxDim = 1400;
+      const maxDim = 1500;
       let width = img.width;
       let height = img.height;
 
@@ -322,7 +446,6 @@ async function preprocessImageForOCR(dataUrl) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Aumenta nitidez/contraste em tons de cinza e detecta se o fundo é escuro (Dark Mode print)
       const imgData = ctx.getImageData(0, 0, width, height);
       const d = imgData.data;
 
@@ -335,10 +458,7 @@ async function preprocessImageForOCR(dataUrl) {
 
       for (let i = 0; i < d.length; i += 4) {
         let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        if (isDarkBackground) {
-          gray = 255 - gray; // Inverte prints em Dark Mode para texto preto no fundo branco!
-        }
-        // Contraste suave
+        if (isDarkBackground) gray = 255 - gray;
         gray = gray < 145 ? Math.max(0, gray * 0.65) : Math.min(255, gray * 1.15);
         d[i] = d[i + 1] = d[i + 2] = gray;
       }
@@ -352,99 +472,167 @@ async function preprocessImageForOCR(dataUrl) {
 }
 
 /**
- * Executa OCR via Gemini Vision (se chave configurada) ou via Tesseract.js local
+ * Obtém a chave de API do Gemini configurada no localStorage ou no ambiente local (.env / env-local.js)
+ */
+function getConfiguredGeminiApiKey() {
+  const fromStorage = localStorage.getItem('godoyfin_gemini_api_key');
+  if (fromStorage && fromStorage.trim().length > 10) {
+    return fromStorage.trim();
+  }
+  if (typeof window.__VITE_GEMINI_API_KEY__ === 'string' && window.__VITE_GEMINI_API_KEY__.trim().length > 10) {
+    return window.__VITE_GEMINI_API_KEY__.trim();
+  }
+  return '';
+}
+
+/**
+ * 2. FUNÇÃO DE LEITURA DE IMAGEM COM GEMINI VISION (gemini-2.5-flash) + FALLBACK AUTOMÁTICO
  */
 async function recognizeReceiptFromImage(imageDataUrl, onProgress = () => {}) {
-  const geminiKey = localStorage.getItem('godoyfin_gemini_api_key') || '';
+  const geminiKey = getConfiguredGeminiApiKey();
 
-  // 1. Se o usuário configurou uma API Key do Google Gemini, usa Visão Computacional IA direta
-  if (geminiKey.trim().length > 15) {
+  if (geminiKey.length > 10) {
     try {
-      onProgress(25, 'Analisando print com IA Vision (Gemini)...');
+      onProgress(20, 'Enviando imagem para Google Gemini Vision (gemini-2.5-flash)...');
       const base64Clean = imageDataUrl.split(',')[1];
       const mimeType = imageDataUrl.substring(imageDataUrl.indexOf(':') + 1, imageDataUrl.indexOf(';')) || 'image/png';
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey.trim())}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                {
-                  text: `Você é um leitor especialista de comprovantes e prints financeiros brasileiros (iFood, Uber, 99, PIX, Notas Fiscais, Cartão).
-Extraia os dados da imagem e retorne APENAS um JSON válido com as chaves:
-{
-  "amount": numero_decimal_ex_45.90,
-  "date": "YYYY-MM-DD",
-  "time": "HH:MM",
-  "merchant": "Nome do Estabelecimento ou App",
-  "sector": "delivery" | "transporte" | "mercado" | "compras" | "saude",
-  "paymentMethod": "PIX" | "Cartão de Crédito" | "Cartão de Débito" | "Vale-Refeição" | "Dinheiro",
-  "rawText": "Resumo textual do comprovante"
-}`
-                },
-                {
-                  inline_data: {
-                    mime_type: mimeType,
-                    data: base64Clean
-                  }
-                }
-              ]
-            }]
-          })
-        }
-      );
+      const systemPrompt = `Você é o motor de visão computacional financeira do aplicativo GodoyFin (Gabriel & Mirela).
+Analise a imagem enviada e identifique qual dos DOIS CENÁRIOS abaixo ela representa, retornando ESTRITAMENTE um JSON válido (sem markdown extra):
 
-      if (response.ok) {
-        onProgress(85, 'Interpretando dados extraídos...');
-        const data = await response.json();
-        const textResp = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const jsonMatch = textResp.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          onProgress(100, 'Leitura concluída com IA!');
+CENÁRIO A: Print de Compra Única (iFood, Uber, 99, Comprovante PIX, Nota Fiscal, Recibo de Cartão)
+Retorne este formato JSON exato:
+{
+  "tipo": "compra_unica",
+  "estabelecimento": "Nome do estabelecimento ou app",
+  "valor": 0.00,
+  "data": "YYYY-MM-DD",
+  "hora": "HH:MM",
+  "setor": "Delivery | Transporte | Mercado | Outros",
+  "formaPagamento": "PIX | Cartão de Crédito | Cartão de Débito | Vale-Refeição | Dinheiro",
+  "responsavel": "Gabriel | Mirela"
+}
+
+CENÁRIO B: Print da Planilha Mensal (Tabela com SALÁRIO GABRIEL, SALÁRIO MIRELA, DESPESAS GABRIEL e DESPESAS MIRELA)
+Se a imagem contiver a tabela de controle mensal do casal, extraia os salários no topo e todas as despesas de cada coluna (ignorando a linha TOTAL DE GASTOS) neste formato JSON exato:
+{
+  "tipo": "planilha_casal",
+  "salarioGabriel": 0.00,
+  "salarioMirela": 0.00,
+  "despesasGabriel": [
+    { "descricao": "Nome da despesa", "valor": 0.00, "setor": "Mercado | Compras | Delivery | Transporte | Saude" }
+  ],
+  "despesasMirela": [
+    { "descricao": "Nome da despesa", "valor": 0.00, "setor": "Mercado | Compras | Delivery | Transporte | Saude" }
+  ]
+}`;
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: systemPrompt },
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64Clean
+                }
+              }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API HTTP ${response.status}`);
+      }
+
+      onProgress(85, 'Processando resposta estruturada do Gemini Vision...');
+      const data = await response.json();
+      const textResp = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const jsonMatch = textResp.match(/\{[\s\S]*\}/);
+
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        onProgress(100, 'Leitura concluída com Gemini 2.5 Flash!');
+
+        // Cenário B: Print da Planilha Mensal (Tabela Gabriel & Mirela)
+        if (parsed.tipo === 'planilha_casal' || Array.isArray(parsed.despesasGabriel) || Array.isArray(parsed.despesasMirela)) {
           return {
-            amount: Number(parsed.amount) || 0,
-            date: parsed.date || new Date().toISOString().slice(0, 10),
-            time: parsed.time || new Date().toTimeString().slice(0, 5),
-            merchant: parsed.merchant || 'Estabelecimento',
-            sector: SECTOR_DICTIONARY[parsed.sector] ? parsed.sector : classifyMerchantSector(parsed.merchant, parsed.rawText),
-            paymentMethod: parsed.paymentMethod || 'PIX',
-            rawText: parsed.rawText || textResp
+            tipo: 'planilha_casal',
+            salarioGabriel: parseFlexibleOCRNumber(parsed.salarioGabriel),
+            salarioMirela: parseFlexibleOCRNumber(parsed.salarioMirela),
+            despesasGabriel: (parsed.despesasGabriel || []).map(item => ({
+              descricao: String(item.descricao || 'Despesa').trim(),
+              valor: parseFlexibleOCRNumber(item.valor),
+              setor: normalizeGeminiSector(item.setor, item.descricao)
+            })).filter(i => i.valor > 0),
+            despesasMirela: (parsed.despesasMirela || []).map(item => ({
+              descricao: String(item.descricao || 'Despesa').trim(),
+              valor: parseFlexibleOCRNumber(item.valor),
+              setor: normalizeGeminiSector(item.setor, item.descricao)
+            })).filter(i => i.valor > 0)
           };
         }
+
+        // Cenário A: Print de Compra Única
+        const merchant = parsed.estabelecimento || parsed.merchant || 'Estabelecimento';
+        const amount = parseFlexibleOCRNumber(parsed.valor ?? parsed.amount);
+        const rawRespOwner = String(parsed.responsavel || 'Gabriel').toLowerCase();
+        const owner = rawRespOwner.includes('mirela') ? 'mirela' : 'gabriel';
+
+        return {
+          tipo: 'compra_unica',
+          amount,
+          date: parsed.data || parsed.date || new Date().toISOString().slice(0, 10),
+          time: parsed.hora || parsed.time || new Date().toTimeString().slice(0, 5),
+          merchant,
+          owner,
+          sector: normalizeGeminiSector(parsed.setor || parsed.sector, merchant, textResp),
+          paymentMethod: parsed.formaPagamento || parsed.paymentMethod || 'PIX',
+          rawText: textResp
+        };
       }
     } catch (err) {
-      console.warn('Fallback para Tesseract.js local:', err);
+      console.warn('Gemini API retornou erro ou limite; acionando Fallback Automático Local (Tesseract.js):', err);
+      onProgress(25, 'Chave API indisponível no momento. Acionando leitor local automático (Fallback)...');
     }
   }
 
-  // 2. OCR Local 100% Gratuito no Navegador com Tesseract.js
-  onProgress(15, 'Melhorando nitidez e contraste do print...');
+  // 3. FALLBACK AUTOMÁTICO LOCAL (Tesseract.js + Parser Nativo)
+  onProgress(30, 'Melhorando nitidez e contraste do print (Leitor Local)...');
   const processedDataUrl = await preprocessImageForOCR(imageDataUrl);
 
   if (typeof Tesseract !== 'undefined') {
-    onProgress(30, 'Iniciando motor OCR óptico...');
+    onProgress(40, 'Executando OCR óptico local...');
     const result = await Tesseract.recognize(processedDataUrl, 'por+eng', {
       logger: (m) => {
         if (m.status === 'recognizing text') {
-          const pct = Math.round(30 + (m.progress || 0) * 65);
-          onProgress(pct, `Lendo texto da imagem (${pct}%)...`);
+          const pct = Math.round(40 + (m.progress || 0) * 55);
+          onProgress(pct, `Lendo imagem localmente (${pct}%)...`);
         }
       }
     });
-    onProgress(100, 'Classificando estabelecimento e valores...');
+    onProgress(100, 'Classificando dados extraídos...');
     const rawText = result?.data?.text || '';
     return parseReceiptText(rawText);
   } else {
-    throw new Error('Biblioteca OCR não carregada.');
+    throw new Error('Biblioteca OCR local não carregada.');
   }
 }
 
 /**
- * Gera uma assinatura rápida (hash visual/bytes) da imagem para ajudar na detecção de duplicidade
+ * Gera uma assinatura rápida da imagem para detecção de duplicidade
  */
 function computeImageSignature(dataUrl = '') {
   if (!dataUrl) return '';
@@ -458,9 +646,60 @@ function computeImageSignature(dataUrl = '') {
 }
 
 /**
- * Gerador de Prints Simulados Realistas em Canvas (para o usuário testar o OCR com 1 clique!)
+ * Gerador de Prints Reais em Canvas (incluindo Print da Planilha Mensal Gabriel & Mirela!)
  */
 function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026-10') {
+  if (preset === 'planilha_casal') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 760;
+    canvas.height = 540;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Blocos de Salários no Topo
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.fillText('SALARIO GABRIEL', 40, 50);
+    ctx.fillText('SALARIO MIRELA', 420, 50);
+
+    ctx.font = 'bold 24px Arial, sans-serif';
+    ctx.fillStyle = '#047857';
+    ctx.fillText('3872', 40, 85);
+    ctx.fillText('R$3 095,00', 420, 85);
+
+    // Cabeçalho das Tabelas Lado a Lado
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.fillText('DESPESAS GABRIEL', 40, 145);
+    ctx.fillText('DESPESAS MIRELA', 420, 145);
+
+    ctx.font = '18px Arial, sans-serif';
+    ctx.fillStyle = '#0f172a';
+    const rows = [
+      ['Apartamento   R$ 850,00', 'Apartamento   R$ 850,00'],
+      ['Condominio   R$ 260,00', 'Condominio   R$ 260,00'],
+      ['Bradesco   R$ 420,00', 'Nubank   R$ 615,00'],
+      ['Cartao Gabriel   R$ 580,00', 'Tim   R$ 65,00'],
+      ['Conta de luz   R$ 195,00', 'Rufino   R$ 180,00'],
+      ['Internet   R$ 120,00', '']
+    ];
+
+    let y = 190;
+    for (const [left, right] of rows) {
+      if (left) ctx.fillText(left, 40, y);
+      if (right) ctx.fillText(right, 420, y);
+      y += 42;
+    }
+
+    ctx.font = 'bold 19px Arial, sans-serif';
+    ctx.fillText('TOTAL DE GASTOS   R$ 2.425,00', 40, 470);
+    ctx.fillText('TOTAL DE GASTOS   R$ 1.970,00', 420, 470);
+
+    return canvas.toDataURL('image/png');
+  }
+
   const canvas = document.createElement('canvas');
   canvas.width = 520;
   canvas.height = 680;
@@ -547,11 +786,9 @@ function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026
 
   const p = presets[preset] || presets.ifood;
 
-  // Fundo
   ctx.fillStyle = p.bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Cabeçalho colorido
   ctx.fillStyle = p.headerBg;
   ctx.fillRect(0, 0, canvas.width, 125);
 
@@ -561,7 +798,6 @@ function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026
   ctx.font = '18px Arial, sans-serif';
   ctx.fillText(p.subtitle, 32, 95);
 
-  // Corpo com fonte limpa e alto contraste para o OCR ler perfeitamente
   ctx.fillStyle = '#0f172a';
   ctx.font = 'bold 21px Arial, sans-serif';
   ctx.fillText(p.merchantLine, 32, 185);
@@ -570,7 +806,6 @@ function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026
   ctx.fillStyle = '#334155';
   ctx.fillText(`Data e Hora: ${p.date}`, 32, 225);
 
-  // Linha divisória
   ctx.strokeStyle = '#cbd5e1';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -578,7 +813,6 @@ function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026
   ctx.lineTo(488, 255);
   ctx.stroke();
 
-  // Itens
   ctx.font = '18px Courier New, monospace';
   ctx.fillStyle = '#1e293b';
   let y = 300;
@@ -587,7 +821,6 @@ function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026
     y += 42;
   }
 
-  // Caixa de Total
   ctx.fillStyle = '#f1f5f9';
   ctx.fillRect(32, 450, 456, 95);
   ctx.strokeStyle = '#94a3b8';
@@ -597,7 +830,6 @@ function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026
   ctx.font = 'bold 26px Arial, sans-serif';
   ctx.fillText(`Valor Total: ${p.total}`, 52, 508);
 
-  // Pagamento
   ctx.font = 'bold 19px Arial, sans-serif';
   ctx.fillStyle = '#334155';
   ctx.fillText(p.payment, 32, 595);
@@ -612,9 +844,11 @@ function generateSampleReceiptDataUrl(preset = 'ifood', selectedMonthStr = '2026
 window.OCRService = {
   SECTOR_DICTIONARY,
   classifyMerchantSector,
+  normalizeGeminiSector,
   extractPaymentMethod,
   parseReceiptText,
   recognizeReceiptFromImage,
   computeImageSignature,
-  generateSampleReceiptDataUrl
+  generateSampleReceiptDataUrl,
+  getConfiguredGeminiApiKey
 };

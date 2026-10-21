@@ -1223,6 +1223,49 @@ async function processUploadedImageDataUrl(dataUrl) {
       if (progressText) progressText.textContent = msg;
     });
 
+    // Cenário B: Print da Planilha Mensal (Tabela Gabriel & Mirela)
+    if (extracted && extracted.tipo === 'planilha_casal') {
+      const targetMonth = appState.currentMonth;
+      const items = [];
+
+      for (const gItem of (extracted.despesasGabriel || [])) {
+        items.push({
+          date: `${targetMonth}-05`,
+          time: '12:00',
+          merchant: gItem.descricao,
+          owner: 'gabriel',
+          sector: window.OCRService.normalizeGeminiSector(gItem.setor, gItem.descricao),
+          paymentMethod: 'PIX',
+          amount: Number(gItem.valor) || 0
+        });
+      }
+
+      for (const mItem of (extracted.despesasMirela || [])) {
+        items.push({
+          date: `${targetMonth}-05`,
+          time: '12:00',
+          merchant: mItem.descricao,
+          owner: 'mirela',
+          sector: window.OCRService.normalizeGeminiSector(mItem.setor, mItem.descricao),
+          paymentMethod: 'PIX',
+          amount: Number(mItem.valor) || 0
+        });
+      }
+
+      if (window.SheetsSyncService && typeof window.SheetsSyncService.applyParsedSheetDataToMonth === 'function') {
+        window.SheetsSyncService.applyParsedSheetDataToMonth({
+          isCoupleSheet: true,
+          salaryGabriel: extracted.salarioGabriel > 0 ? extracted.salarioGabriel : null,
+          salaryMirela: extracted.salarioMirela > 0 ? extracted.salarioMirela : null,
+          items
+        }, 'Print da Planilha (Gemini Vision)');
+      }
+
+      closeScanModal();
+      return;
+    }
+
+    // Cenário A: Print de Compra Única
     pendingReceiptData.rawText = extracted.rawText || '';
     openConfirmStepWithData(extracted);
   } catch (err) {
@@ -1647,7 +1690,9 @@ window.importBackupJSON = function(event) {
 };
 
 window.openSettingsModal = function() {
-  const currentKey = localStorage.getItem('godoyfin_gemini_api_key') || '';
+  const currentKey = window.OCRService && typeof window.OCRService.getConfiguredGeminiApiKey === 'function'
+    ? window.OCRService.getConfiguredGeminiApiKey()
+    : (localStorage.getItem('godoyfin_gemini_api_key') || '');
   document.getElementById('settings-gemini-key').value = currentKey;
   document.getElementById('settings-modal').classList.remove('hidden');
 };

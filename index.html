@@ -616,7 +616,11 @@
                 <span>Testar leitor OCR com comprovante gerado:</span>
               </span>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-6 gap-2">
+              <button type="button" onclick="triggerDemoReceiptOCR('planilha_casal')"
+                class="px-2.5 py-2 rounded-xl text-xs font-bold bg-emerald-600/15 text-emerald-500 hover:border-emerald-500 border border-emerald-500/30 transition text-center">
+                📊 Print Planilha
+              </button>
               <button type="button" onclick="triggerDemoReceiptOCR('ifood')"
                 class="px-2.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 hover:border-red-500 border border-slate-200 dark:border-slate-700 transition text-center">
                 🍔 Print iFood
@@ -634,7 +638,7 @@
                 🛍️ Mercado Livre
               </button>
               <button type="button" onclick="triggerDemoReceiptOCR('saude')"
-                class="px-2.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 hover:border-cyan-500 border border-slate-200 dark:border-slate-700 transition text-center col-span-2 sm:col-span-1">
+                class="px-2.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 hover:border-cyan-500 border border-slate-200 dark:border-slate-700 transition text-center">
                 💊 Farmácia
               </button>
             </div>
@@ -1140,7 +1144,8 @@
     </div>
   </div>
 
-  <!-- Scripts da Aplicação -->
+  <!-- Scripts da Aplicação (env-local.js é local e ignorado no .gitignore para segurança da chave API) -->
+  <script src="env-local.js"></script>
   <script src="ocr-engine.js"></script>
   <script src="app.js"></script>
   <script src="sheets-sync.js"></script>
