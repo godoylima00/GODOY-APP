@@ -41,22 +41,25 @@ const SECTOR_DICTIONARY = {
     emoji: '🛒',
     color: '#10b981',
     keywords: [
+      'apartamento', 'apto', 'moradia', 'financiamento', 'prestacao', 'prestação',
+      'conta de luz', 'energia', 'luz', 'internet', 'fibra', 'wi-fi', 'wifi', 'agua', 'água', 'gas', 'gás',
       'supermercado', 'mercado', 'atacadao', 'atacadão', 'assai', 'assaí', 'carrefour',
       'pao de acucar', 'pão de açúcar', 'extra', 'dia %', 'oba hortifruti', 'hortifruti',
       'sonda', 'mambo', 'zafari', 'condor', 'angeloni', 'bh supermercados', 'guanabara',
       'mundial', 'sam s club', 'sams club', 'minuto pao', 'oxxo', 'açougue', 'swift',
       'enel', 'cpfl', 'light', 'cemig', 'copel', 'celesc', 'neoenergia', 'equatorial',
       'sabesp', 'sanepar', 'copasa', 'cedae', 'comgas', 'naturgy', 'ultragaz',
-      'vivo', 'claro', 'tim ', 'oi fibra', 'net ', 'sky', 'condominio', 'aluguel',
-      'iptu', 'leroy merlin', 'telhanorte', 'c&c', 'tok&stok', 'madeiramadeira', 'lavanderia'
+      'vivo', 'claro', 'tim', 'oi fibra', 'net ', 'sky', 'condominio', 'condomínio', 'aluguel',
+      'iptu', 'leroy merlin', 'telhanorte', 'c&c', 'tok&stok', 'madeiramadeira', 'lavanderia', 'rufino'
     ]
   },
   compras: {
     id: 'compras',
-    name: 'Compras & Lazer',
+    name: 'Compras, Cartões & Lazer',
     emoji: '🛍️',
     color: '#8b5cf6',
     keywords: [
+      'cartao', 'cartão', 'nubank', 'bradesco', 'itau', 'itaú', 'santander', 'inter', 'c6', 'fatura',
       'mercado livre', 'mercadolivre', 'meli', 'mercadopago*meli', 'amazon', 'shopee',
       'shein', 'aliexpress', 'magalu', 'magazine luiza', 'casas bahia', 'ponto frio',
       'fast shop', 'kabum', 'pichau', 'terabyte', 'apple', 'samsung', 'nike', 'adidas',

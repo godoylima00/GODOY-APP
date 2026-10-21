@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GodoyFin • Controle Financeiro Inteligente com OCR</title>
+  <title>GodoyFin • Controle Financeiro Gabriel & Mirela</title>
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,6 +35,9 @@
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
+  <!-- SheetJS (XLSX) CDN para leitura direta de arquivos .xlsx / .xls / .csv -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <!-- Tesseract.js v5 CDN (OCR Local no Navegador) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
@@ -52,7 +55,7 @@
   <div class="flex min-h-screen">
 
     <!-- ====================================================================
-         BARRA LATERAL (DESKTOP) - Inspirada em Nubank / Guiabolso
+         BARRA LATERAL (DESKTOP)
          ==================================================================== -->
     <aside class="hidden lg:flex flex-col w-64 shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0d1322] fixed inset-y-0 left-0 z-30 no-print">
       <!-- Logo -->
@@ -62,19 +65,24 @@
         </div>
         <div>
           <h1 class="font-extrabold text-lg tracking-tight leading-none">Godoy<span class="text-purple-500">Fin</span></h1>
-          <span class="text-[11px] text-slate-400 font-medium">Finanças & Smart OCR</span>
+          <span class="text-[11px] text-slate-400 font-medium">Gabriel & Mirela • Finanças</span>
         </div>
       </div>
 
-      <!-- Botão Principal de Destaque (+ Adicionar Print/Comprovante) -->
-      <div class="p-4">
-        <button onclick="openScanModal()"
-          class="w-full py-3.5 px-4 rounded-2xl cta-scan-btn font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg">
-          <i data-lucide="scan-line" class="w-5 h-5"></i>
-          <span>+ Adicionar Print</span>
+      <!-- Botões Principais de Destaque -->
+      <div class="p-4 space-y-2">
+        <button onclick="openGoogleSheetsModal('paste')"
+          class="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+          <span>Importar Planilha do Mês</span>
         </button>
-        <button onclick="openQuickManualModal('delivery')"
-          class="w-full mt-2.5 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition">
+        <button onclick="openScanModal()"
+          class="w-full py-3 px-4 rounded-2xl cta-scan-btn font-bold text-xs flex items-center justify-center gap-2 shadow-lg">
+          <i data-lucide="scan-line" class="w-4 h-4"></i>
+          <span>+ Adicionar Print (OCR)</span>
+        </button>
+        <button onclick="openQuickManualModal('mercado', 'gabriel')"
+          class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition">
           <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
           <span>Entrada Manual (5s)</span>
         </button>
@@ -84,52 +92,28 @@
       <nav class="flex-1 px-3 py-2 space-y-1 text-sm font-medium">
         <button onclick="scrollToSection('top-dashboard')"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-purple-600 dark:text-purple-400 bg-purple-500/10 font-semibold transition">
-          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-          <span>Dashboard Mensal</span>
+          <i data-lucide="wallet" class="w-4 h-4"></i>
+          <span>Salários (Individual & Casal)</span>
         </button>
-        <button onclick="scrollToSection('section-charts')"
+        <button onclick="scrollToSection('section-couple-boards')"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
-          <i data-lucide="pie-chart" class="w-4 h-4"></i>
-          <span>Gráficos & Evolução</span>
+          <i data-lucide="columns-2" class="w-4 h-4"></i>
+          <span>Gabriel vs Mirela (Horizontal)</span>
         </button>
         <button onclick="scrollToSection('section-sectors')"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
           <i data-lucide="layers" class="w-4 h-4"></i>
-          <span>Tabelas por Setor</span>
+          <span>Setores na Horizontal</span>
+        </button>
+        <button onclick="scrollToSection('section-charts')"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+          <i data-lucide="pie-chart" class="w-4 h-4"></i>
+          <span>Gráficos & Comparativo</span>
         </button>
         <button onclick="scrollToSection('section-subscriptions')"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
           <i data-lucide="repeat" class="w-4 h-4"></i>
           <span>Assinaturas & Fixos</span>
-        </button>
-
-        <div class="pt-4 pb-1 px-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Atalhos de Setores
-        </div>
-        <button onclick="setSectorTab('delivery'); scrollToSection('section-sectors')"
-          class="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
-          <span>🍔 Delivery & Alimentação</span>
-          <span class="w-2 h-2 rounded-full bg-red-500"></span>
-        </button>
-        <button onclick="setSectorTab('transporte'); scrollToSection('section-sectors')"
-          class="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
-          <span>🚗 Transporte & Uber</span>
-          <span class="w-2 h-2 rounded-full bg-slate-500"></span>
-        </button>
-        <button onclick="setSectorTab('mercado'); scrollToSection('section-sectors')"
-          class="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
-          <span>🛒 Mercado & Casa</span>
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-        </button>
-        <button onclick="setSectorTab('compras'); scrollToSection('section-sectors')"
-          class="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
-          <span>🛍️ Compras & Lazer</span>
-          <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-        </button>
-        <button onclick="setSectorTab('saude'); scrollToSection('section-sectors')"
-          class="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
-          <span>💊 Saúde & Cuidados</span>
-          <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
         </button>
       </nav>
 
@@ -155,29 +139,28 @@
     <!-- ====================================================================
          CONTEÚDO PRINCIPAL
          ==================================================================== -->
-    <main class="flex-1 lg:ml-64 main-content-wrapper p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto" id="top-dashboard">
+    <main class="flex-1 lg:ml-64 main-content-wrapper p-4 sm:p-6 lg:p-7 max-w-[1600px] w-full mx-auto" id="top-dashboard">
 
-      <!-- Cabeçalho Superior: Seletor de Mês/Ano + Botões Rápidos de Exportação e Upload -->
-      <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+      <!-- Cabeçalho Superior: Seletor de Mês/Ano + Botões Rápidos -->
+      <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
         <div class="flex items-center justify-between">
           <div>
             <div class="flex items-center gap-2">
               <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-500">
-                Visão Mensal Inteligente
+                Controle Dinâmico Mensal • Gabriel & Mirela
               </span>
-              <span class="hidden sm:inline-block text-xs text-slate-400">• Dica: pressione <kbd class="px-1.5 py-0.5 text-[11px] rounded bg-slate-200 dark:bg-slate-800 font-mono">Ctrl+V</kbd> para colar qualquer print</span>
+              <span class="hidden sm:inline-block text-xs text-slate-400">• Os valores são lidos dinamicamente da planilha de cada mês</span>
             </div>
-            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">Painel de Controle Financeiro</h2>
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">Painel Financeiro do Casal</h2>
           </div>
 
-          <!-- Botão Mobile de Tema -->
           <button onclick="toggleDarkMode()" class="lg:hidden p-2.5 rounded-xl card-surface no-print" title="Alternar Tema">
             <i data-lucide="sun-moon" class="w-5 h-5 text-purple-500"></i>
           </button>
         </div>
 
-        <!-- Seletor de Mês/Ano + Ações de Exportação -->
-        <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Seletor de Mês/Ano + Ações -->
+        <div class="flex flex-wrap items-center gap-2">
           <!-- Navegador de Mês -->
           <div class="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1 shadow-sm">
             <button onclick="changeMonth(-1)"
@@ -199,24 +182,21 @@
           <!-- Google Sheets Sync + Exportar CSV / PDF -->
           <div class="flex flex-wrap items-center gap-2 no-print">
             <button onclick="openGoogleSheetsModal('import')"
-              class="px-3.5 py-2.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
-              title="Importar ou Sincronizar com Google Planilhas">
+              class="px-3.5 py-2.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 shadow-sm transition">
               <span>🔗 Sincronizar Google Sheets</span>
             </button>
             <button onclick="exportMonthCSV()"
-              class="px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition"
-              title="Exportar Tabelas para Excel (CSV)">
+              class="px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
               <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-500"></i>
               <span class="hidden sm:inline">Excel (CSV)</span>
             </button>
             <button onclick="exportPDFReport()"
-              class="px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-purple-500/50 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition"
-              title="Gerar Relatório em PDF / Imprimir">
+              class="px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-purple-500/50 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
               <i data-lucide="printer" class="w-4 h-4 text-purple-500"></i>
-              <span class="hidden sm:inline">Relatório PDF</span>
+              <span class="hidden sm:inline">PDF</span>
             </button>
             <button onclick="openScanModal()"
-              class="px-4 py-2.5 rounded-xl cta-scan-btn text-xs sm:text-sm font-bold flex items-center gap-2">
+              class="px-4 py-2.5 rounded-xl cta-scan-btn text-xs font-bold flex items-center gap-1.5">
               <i data-lucide="camera" class="w-4 h-4"></i>
               <span>+ Ler Print (OCR)</span>
             </button>
@@ -237,152 +217,197 @@
           </span>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <button onclick="quickRefreshFromGoogleSheets()"
             class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm">
             <i id="sheets-quick-refresh-icon" data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
             <span>🔄 Atualizar da Planilha</span>
           </button>
+          <button onclick="openGoogleSheetsModal('paste')"
+            class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-purple-500/15 text-purple-500 hover:bg-purple-500/25 transition">
+            📋 Colar Planilha do Mês
+          </button>
           <button onclick="openGoogleSheetsModal('webhook')"
             class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition">
-            Configurar Webhook
+            Webhook
           </button>
         </div>
       </div>
 
       <!-- ==================================================================
-           4 CARDS DE RESUMO NO TOPO (Receita, Despesa, Saldo, Maior Vilão)
+           ABA / SEÇÃO DE SALÁRIOS (Individual Gabriel + Individual Mirela + Casal Juntos)
            ================================================================== -->
-      <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5 mb-7">
-        <!-- Card 1: Receita Mensal Total -->
-        <div class="card-surface p-5 relative overflow-hidden">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Receita Mensal Total</span>
-            <button onclick="openIncomeModal()"
-              class="text-xs font-semibold text-emerald-500 hover:underline flex items-center gap-1 no-print"
-              title="Editar Receita do Mês">
-              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-              <span>Editar</span>
-            </button>
-          </div>
-          <div id="card-income-value" class="text-2xl sm:text-3xl font-extrabold text-emerald-500 tracking-tight">
-            R$ 7.850,00
-          </div>
-          <p class="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-            <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-500"></i>
-            <span>Salário + Entradas do mês</span>
-          </p>
-        </div>
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-7">
 
-        <!-- Card 2: Despesa Mensal Total -->
-        <div class="card-surface p-5 relative overflow-hidden">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Despesa Mensal Total</span>
-            <span class="w-7 h-7 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
-              <i data-lucide="arrow-down-right" class="w-4 h-4"></i>
-            </span>
-          </div>
-          <div id="card-expense-value" class="text-2xl sm:text-3xl font-extrabold text-red-500 tracking-tight">
-            R$ 0,00
-          </div>
-          <div class="mt-1.5">
-            <span id="card-expense-diff" class="text-xs text-slate-400">Calculando...</span>
-          </div>
-        </div>
-
-        <!-- Card 3: Saldo Restante do Mês -->
-        <div class="card-surface p-5 relative overflow-hidden">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Saldo Restante do Mês</span>
-            <span class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center">
-              <i data-lucide="wallet" class="w-4 h-4"></i>
-            </span>
-          </div>
-          <div id="card-balance-value" class="text-2xl sm:text-3xl font-extrabold text-emerald-500 tracking-tight">
-            R$ 0,00
-          </div>
-          <div class="mt-1.5">
-            <span id="card-balance-status" class="text-xs font-medium text-emerald-500">0% da renda comprometida</span>
-          </div>
-        </div>
-
-        <!-- Card 4: Maior Vilão do Mês -->
-        <div class="card-surface p-5 relative overflow-hidden border-l-4 border-l-amber-500">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1">
-              <i data-lucide="flame" class="w-3.5 h-3.5"></i>
-              <span>Maior Vilão do Mês</span>
-            </span>
-          </div>
-          <div id="card-villain-title" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white truncate">
-            🍔 Delivery: R$ 0,00
-          </div>
-          <p id="card-villain-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-            Seu maior gasto acumulado neste mês
-          </p>
-        </div>
-      </section>
-
-      <!-- ==================================================================
-           GRÁFICOS INTERATIVOS (Donut Setorial + Barras Evolução/Comparativo)
-           ================================================================== -->
-      <section id="section-charts" class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-8">
-        <!-- Gráfico de Rosca: Proporção por Setor -->
-        <div class="card-surface p-5 sm:p-6 lg:col-span-5 flex flex-col">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h3 class="font-bold text-base">Gastos por Setor / Categoria</h3>
-              <p class="text-xs text-slate-400">Proporção do orçamento mensal</p>
-            </div>
-            <span class="p-2 rounded-xl bg-purple-500/10 text-purple-500">
-              <i data-lucide="pie-chart" class="w-4 h-4"></i>
-            </span>
-          </div>
-          <div class="relative flex-1 min-h-[260px]">
-            <canvas id="sectorDonutChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Gráfico de Barras: Evolução Diária ou Comparativo com Mês Anterior -->
-        <div class="card-surface p-5 sm:p-6 lg:col-span-7 flex flex-col">
-          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <div>
-              <h3 class="font-bold text-base">Evolução e Comparativo de Gastos</h3>
-              <p class="text-xs text-slate-400">Acompanhe o ritmo diário ou compare com o mês passado</p>
-            </div>
-            <div class="flex items-center gap-1.5 no-print">
-              <button id="btn-chart-daily" onclick="setBarChartMode('daily')"
-                class="px-3 py-1 rounded-lg text-xs font-semibold bg-purple-700 text-white transition">
-                Dia a Dia
-              </button>
-              <button id="btn-chart-compare" onclick="setBarChartMode('compare')"
-                class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
-                Vs. Mês Anterior
-              </button>
-            </div>
-          </div>
-          <div class="relative flex-1 min-h-[260px]">
-            <canvas id="evolutionBarChart"></canvas>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================================================================
-           ORGANIZAÇÃO EM TABELAS SEPARADAS POR SETOR / CATEGORIA
-           ================================================================== -->
-      <section id="section-sectors" class="mb-10">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <!-- 1. Meu Salário (Gabriel) -->
+        <div class="card-surface p-5 border-l-4 border-l-blue-500 flex flex-col justify-between">
           <div>
-            <h2 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
-              <i data-lucide="table-2" class="w-5 h-5 text-purple-500"></i>
-              <span>Tabelas de Gastos por Setor</span>
-            </h2>
-            <p class="text-xs text-slate-400">
-              Cada categoria possui seu próprio teto de gastos, busca instantânea, comprovantes e subtotal.
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-blue-500 flex items-center gap-1.5">
+                <span>👦 1. Meu Salário (Gabriel)</span>
+              </span>
+              <button onclick="openIncomeModal()"
+                class="text-xs font-semibold text-blue-500 hover:underline flex items-center gap-1 no-print">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                <span>Editar</span>
+              </button>
+            </div>
+            <div id="card-gabriel-salary" class="text-2xl font-extrabold text-emerald-500 tracking-tight">
+              R$ 0,00
+            </div>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-slate-200/70 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span class="text-slate-400 block">Despesas Gabriel</span>
+              <span id="card-gabriel-expenses" class="font-bold text-red-500">R$ 0,00</span>
+            </div>
+            <div class="text-right">
+              <span class="text-slate-400 block">Saldo Livre Gabriel</span>
+              <span id="card-gabriel-balance" class="font-extrabold text-emerald-500">R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Salário Dela (Mirela) -->
+        <div class="card-surface p-5 border-l-4 border-l-pink-500 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-pink-500 flex items-center gap-1.5">
+                <span>👩 2. Salário Dela (Mirela)</span>
+              </span>
+              <button onclick="openIncomeModal()"
+                class="text-xs font-semibold text-pink-500 hover:underline flex items-center gap-1 no-print">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                <span>Editar</span>
+              </button>
+            </div>
+            <div id="card-mirela-salary" class="text-2xl font-extrabold text-emerald-500 tracking-tight">
+              R$ 0,00
+            </div>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-slate-200/70 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span class="text-slate-400 block">Despesas Mirela</span>
+              <span id="card-mirela-expenses" class="font-bold text-red-500">R$ 0,00</span>
+            </div>
+            <div class="text-right">
+              <span class="text-slate-400 block">Saldo Livre Mirela</span>
+              <span id="card-mirela-balance" class="font-extrabold text-emerald-500">R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Salário dos 2 Juntos (Renda Total do Casal) -->
+        <div class="card-surface p-5 border-l-4 border-l-purple-600 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-purple-500 flex items-center gap-1.5">
+                <span>💑 3. Salário dos 2 Juntos</span>
+              </span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-400">
+                Soma Automática
+              </span>
+            </div>
+            <div id="card-couple-income" class="text-2xl font-extrabold text-emerald-500 tracking-tight">
+              R$ 0,00
+            </div>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-slate-200/70 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span class="text-slate-400 block">Gastos Combinados</span>
+              <span id="card-couple-expense" class="font-bold text-red-500">R$ 0,00</span>
+            </div>
+            <div class="text-right">
+              <span class="text-slate-400 block">Saldo Restante Casal</span>
+              <span id="card-couple-balance" class="text-base font-extrabold text-emerald-500">R$ 0,00</span>
+            </div>
+          </div>
+          <div id="card-couple-status" class="text-[11px] text-slate-400 mt-1.5 truncate">
+            Importe a planilha do mês ou edite os salários
+          </div>
+        </div>
+
+        <!-- 4. Maior Vilão do Mês -->
+        <div class="card-surface p-5 border-l-4 border-l-amber-500 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                <span>Maior Setor do Mês</span>
+              </span>
+            </div>
+            <div id="card-villain-title" class="text-lg font-extrabold text-slate-900 dark:text-white truncate">
+              Sem gastos no mês
+            </div>
+            <p id="card-villain-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Sincronize a planilha do mês ou adicione um print
             </p>
           </div>
 
-          <button onclick="openQuickManualModal('delivery')"
+          <div class="mt-3 pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between no-print">
+            <button onclick="openGoogleSheetsModal('paste')" class="text-xs font-bold text-emerald-500 hover:underline">
+              + Carregar Planilha
+            </button>
+            <button onclick="clearCurrentMonthData()" class="text-[11px] text-slate-400 hover:text-red-500">
+              Limpar Mês
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================================================================
+           LAYOUT NA HORIZONTAL (LADO A LADO): DESPESAS GABRIEL | DESPESAS MIRELA
+           ================================================================== -->
+      <section id="section-couple-boards" class="mb-8">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div>
+            <h2 class="text-lg sm:text-xl font-extrabold tracking-tight flex items-center gap-2">
+              <i data-lucide="columns-2" class="w-5 h-5 text-purple-500"></i>
+              <span>Tabelas Lado a Lado na Horizontal: Despesas Gabriel & Despesas Mirela</span>
+            </h2>
+            <p class="text-xs text-slate-400">
+              Espelho dinâmico da planilha mensal com leitura automática até <strong>TOTAL DE GASTOS</strong>
+            </p>
+          </div>
+
+          <!-- Alternador de Visualização Horizontal de Itens -->
+          <div class="flex items-center gap-1.5 no-print">
+            <span class="text-xs text-slate-400 mr-1">Exibição dos itens:</span>
+            <button id="btn-display-horizontal" onclick="setItemsDisplayMode('horizontal')"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-700 text-white transition">
+              Faixa Horizontal
+            </button>
+            <button id="btn-display-table" onclick="setItemsDisplayMode('table')"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+              Tabela Compacta
+            </button>
+          </div>
+        </div>
+
+        <!-- Container Flex/Grid Horizontal Lado a Lado (Gabriel à esquerda | Mirela à direita) -->
+        <div id="couple-horizontal-boards" class="flex flex-col lg:flex-row items-stretch gap-5"></div>
+      </section>
+
+      <!-- ==================================================================
+           TABELAS DE SETORES NA HORIZONTAL (LADO A LADO)
+           ================================================================== -->
+      <section id="section-sectors" class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div>
+            <h2 class="text-lg sm:text-xl font-extrabold tracking-tight flex items-center gap-2">
+              <i data-lucide="layers" class="w-5 h-5 text-purple-500"></i>
+              <span>Setores & Categorias na Horizontal (Lado a Lado)</span>
+            </h2>
+            <p class="text-xs text-slate-400">
+              Deslize horizontalmente ou filtre um setor específico • Cada tabela possui seu próprio Teto de Gastos
+            </p>
+          </div>
+
+          <button onclick="openQuickManualModal('mercado', 'gabriel')"
             class="self-start sm:self-auto px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-xs font-bold flex items-center gap-2 shadow-sm hover:opacity-90 transition no-print">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
             <span>+ Lançamento Manual Rápido</span>
@@ -390,10 +415,52 @@
         </div>
 
         <!-- Barra de Abas por Setor -->
-        <div id="sector-tabs-bar" class="flex flex-wrap items-center gap-2 mb-5 no-print"></div>
+        <div id="sector-tabs-bar" class="flex flex-wrap items-center gap-2 mb-4 no-print"></div>
 
-        <!-- Container das 5 Tabelas Setoriais -->
-        <div id="sector-tables-container" class="space-y-6"></div>
+        <!-- Container Horizontal (Lado a Lado) das 5 Tabelas Setoriais -->
+        <div id="sector-tables-container" class="horizontal-board-scroll"></div>
+      </section>
+
+      <!-- ==================================================================
+           GRÁFICOS INTERATIVOS (Donut Setorial + Barras Gabriel vs Mirela / Mês Anterior)
+           ================================================================== -->
+      <section id="section-charts" class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-8">
+        <div class="card-surface p-5 sm:p-6 lg:col-span-5 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-base">Proporção por Setor</h3>
+              <p class="text-xs text-slate-400">Distribuição dos gastos combinados do mês</p>
+            </div>
+            <span class="p-2 rounded-xl bg-purple-500/10 text-purple-500">
+              <i data-lucide="pie-chart" class="w-4 h-4"></i>
+            </span>
+          </div>
+          <div class="relative flex-1 min-h-[250px]">
+            <canvas id="sectorDonutChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card-surface p-5 sm:p-6 lg:col-span-7 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="font-bold text-base">Comparativo Horizontal por Setor</h3>
+              <p class="text-xs text-slate-400">Despesas Gabriel vs. Mirela ou Comparativo com o Mês Anterior</p>
+            </div>
+            <div class="flex items-center gap-1.5 no-print">
+              <button id="btn-chart-daily" onclick="setBarChartMode('daily')"
+                class="px-3 py-1 rounded-lg text-xs font-semibold bg-purple-700 text-white transition">
+                Gabriel vs. Mirela
+              </button>
+              <button id="btn-chart-compare" onclick="setBarChartMode('compare')"
+                class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+                Vs. Mês Anterior
+              </button>
+            </div>
+          </div>
+          <div class="relative flex-1 min-h-[250px]">
+            <canvas id="evolutionBarChart"></canvas>
+          </div>
+        </div>
       </section>
 
       <!-- ==================================================================
@@ -403,59 +470,64 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
           <div>
             <div class="flex items-center gap-2">
-              <h3 class="text-lg font-extrabold">🔄 Gestão de Assinaturas e Gastos Fixos Recorrentes</h3>
+              <h3 class="text-lg font-extrabold">🔄 Assinaturas e Gastos Fixos Recorrentes</h3>
               <span id="subscriptions-total-badge"
                 class="px-3 py-0.5 rounded-full text-xs font-bold bg-purple-500/15 text-purple-500">
                 Total Fixo: R$ 0,00
               </span>
             </div>
             <p class="text-xs text-slate-400 mt-0.5">
-              Cobranças automáticas (Netflix, Spotify, Internet, Aluguel, Academia) lançadas automaticamente todo mês sem precisar de print.
+              Cobranças opcionais lançadas automaticamente todo mês (ou importe direto da sua planilha mensal).
             </p>
           </div>
         </div>
 
-        <!-- Formulário Rápido para Cadastrar Nova Assinatura/Fixo -->
-        <form onsubmit="addSubscription(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 my-4 no-print">
-          <input id="sub-merchant" type="text" required placeholder="Ex: Netflix, Aluguel, Spotify..."
-            class="lg:col-span-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        <form onsubmit="addSubscription(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5 my-4 no-print">
+          <input id="sub-merchant" type="text" required placeholder="Nome da despesa fixa..."
+            class="lg:col-span-2 px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
 
-          <input id="sub-amount" type="number" step="0.01" min="0.01" required placeholder="Valor (R$)"
-            class="px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-
-          <input id="sub-day" type="number" min="1" max="28" required placeholder="Dia venc. (1-28)" value="10"
-            class="px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-
-          <select id="sub-sector"
-            class="px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-            <option value="compras">🛍️ Compras & Lazer</option>
-            <option value="mercado">🛒 Mercado & Casa</option>
-            <option value="saude">💊 Saúde & Cuidados</option>
-            <option value="transporte">🚗 Transporte</option>
-            <option value="delivery">🍔 Delivery & Alimentação</option>
+          <select id="sub-owner"
+            class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <option value="gabriel">👦 Gabriel</option>
+            <option value="mirela">👩 Mirela</option>
+            <option value="casal">💑 Casal</option>
           </select>
 
-          <div class="flex gap-2">
+          <input id="sub-amount" type="number" step="0.01" min="0.01" required placeholder="Valor (R$)"
+            class="px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+
+          <input id="sub-day" type="number" min="1" max="28" required placeholder="Dia (1-28)" value="5"
+            class="px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+
+          <select id="sub-sector"
+            class="px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <option value="mercado">🏠 Casa & Mercado</option>
+            <option value="compras">💳 Cartões & Compras</option>
+            <option value="delivery">🍔 Delivery</option>
+            <option value="transporte">🚗 Transporte</option>
+            <option value="saude">💊 Saúde</option>
+          </select>
+
+          <div class="flex gap-1.5">
             <select id="sub-payment"
-              class="flex-1 px-2.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              <option value="Cartão de Crédito">💳 Crédito</option>
+              class="flex-1 px-2 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <option value="PIX">⚡ PIX</option>
+              <option value="Cartão de Crédito">💳 Crédito</option>
               <option value="Cartão de Débito">🏦 Débito</option>
             </select>
             <button type="submit"
-              class="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white text-xs font-bold shrink-0 transition">
+              class="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white text-xs font-bold shrink-0 transition">
               + Fixar
             </button>
           </div>
         </form>
 
-        <!-- Tabela de Assinaturas -->
         <div class="overflow-x-auto">
           <table class="sector-table">
             <thead>
               <tr>
-                <th>Dia Cobrança</th>
-                <th>Assinatura / Gasto Fixo</th>
+                <th>Dia</th>
+                <th>Responsável & Despesa Fixa</th>
                 <th>Setor</th>
                 <th>Pagamento</th>
                 <th class="text-right">Valor Mensal</th>
@@ -470,42 +542,40 @@
   </div>
 
   <!-- ====================================================================
-       MENU INFERIOR RÁPIDO (MOBILE) - Para facilitar envio de prints pelo celular
+       MENU INFERIOR RÁPIDO (MOBILE)
        ==================================================================== -->
   <nav class="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-40 px-3 py-2 flex items-center justify-around no-print">
     <button onclick="scrollToSection('top-dashboard')" class="flex flex-col items-center gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-      <span>Resumo</span>
+      <i data-lucide="wallet" class="w-5 h-5"></i>
+      <span>Salários</span>
     </button>
-    <button onclick="scrollToSection('section-sectors')" class="flex flex-col items-center gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-      <i data-lucide="layers" class="w-5 h-5"></i>
-      <span>Setores</span>
+    <button onclick="openGoogleSheetsModal('paste')" class="flex flex-col items-center gap-0.5 text-xs font-medium text-emerald-500">
+      <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+      <span>Planilha</span>
     </button>
 
-    <!-- Botão Central Flutuante Mobile para Enviar Print/Comprovante -->
     <button onclick="openScanModal()"
       class="-mt-7 px-5 py-3 rounded-2xl cta-scan-btn font-bold text-xs flex items-center gap-1.5 shadow-xl">
       <i data-lucide="scan-line" class="w-5 h-5"></i>
       <span>+ Print</span>
     </button>
 
-    <button onclick="openQuickManualModal('delivery')" class="flex flex-col items-center gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-      <i data-lucide="zap" class="w-5 h-5 text-amber-500"></i>
-      <span>Manual</span>
+    <button onclick="scrollToSection('section-couple-boards')" class="flex flex-col items-center gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+      <i data-lucide="columns-2" class="w-5 h-5"></i>
+      <span>Casal</span>
     </button>
-    <button onclick="scrollToSection('section-subscriptions')" class="flex flex-col items-center gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-      <i data-lucide="repeat" class="w-5 h-5"></i>
-      <span>Fixos</span>
+    <button onclick="scrollToSection('section-sectors')" class="flex flex-col items-center gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+      <i data-lucide="layers" class="w-5 h-5"></i>
+      <span>Setores</span>
     </button>
   </nav>
 
   <!-- ====================================================================
-       MODAL PRINCIPAL: LEITOR INTELIGENTE DE PRINTS (OCR) + CONFIRMAÇÃO RÁPIDA
+       MODAL PRINCIPAL: LEITOR DE PRINTS (OCR) + CONFIRMAÇÃO RÁPIDA
        ==================================================================== -->
   <div id="scan-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
     <div class="card-surface w-full max-w-xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[92vh] flex flex-col">
 
-      <!-- Cabeçalho do Modal -->
       <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-xl bg-purple-600/15 text-purple-500 flex items-center justify-center">
@@ -521,10 +591,9 @@
         </button>
       </div>
 
-      <!-- Corpo Rolável do Modal -->
       <div class="p-6 overflow-y-auto space-y-5">
 
-        <!-- ETAPA 1: UPLOAD / DRAG & DROP / CTRL+V / SIMULADOR 1-CLIQUE -->
+        <!-- ETAPA 1: UPLOAD -->
         <div id="scan-step-upload" class="space-y-5">
           <label id="receipt-dropzone" for="receipt-file-input"
             class="dropzone-area rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer">
@@ -540,12 +609,11 @@
             <input id="receipt-file-input" type="file" accept="image/*" class="hidden" />
           </label>
 
-          <!-- Testador Instantâneo de Prints Reais (Para testar o OCR em 1 clique!) -->
           <div class="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70">
             <div class="flex items-center justify-between mb-2.5">
               <span class="text-xs font-bold uppercase tracking-wider text-purple-500 flex items-center gap-1.5">
                 <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
-                <span>Sem print agora? Teste o leitor OCR com um comprovante real gerado:</span>
+                <span>Testar leitor OCR com comprovante gerado:</span>
               </span>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -573,7 +641,7 @@
           </div>
 
           <div class="flex items-center justify-between pt-2">
-            <button type="button" onclick="openQuickManualModal('delivery')"
+            <button type="button" onclick="openQuickManualModal('mercado', 'gabriel')"
               class="text-xs font-semibold text-purple-500 hover:underline flex items-center gap-1">
               <i data-lucide="keyboard" class="w-3.5 h-3.5"></i>
               <span>Prefere digitar manualmente sem print? Clique aqui</span>
@@ -581,7 +649,7 @@
           </div>
         </div>
 
-        <!-- ETAPA 2: PROCESSAMENTO DO OCR COM ANIMAÇÃO DE SCANNER -->
+        <!-- ETAPA 2: PROCESSAMENTO DO OCR -->
         <div id="scan-step-processing" class="hidden py-6 flex flex-col items-center text-center space-y-4">
           <div class="relative w-44 h-56 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-lg bg-slate-900">
             <img id="scan-processing-img" src="" alt="Processando Print" class="w-full h-full object-cover opacity-75" />
@@ -597,20 +665,18 @@
           </div>
         </div>
 
-        <!-- ETAPA 3: TELA DE CONFIRMAÇÃO RÁPIDA (DADOS EXTRAÍDOS + ALERTA DE DUPLICIDADE) -->
+        <!-- ETAPA 3: TELA DE CONFIRMAÇÃO RÁPIDA -->
         <form id="scan-step-confirm" onsubmit="saveConfirmedTransaction(event)" class="hidden space-y-4">
 
-          <!-- Alerta de Detecção de Print Duplicado -->
           <div id="duplicate-alert-banner"
             class="hidden p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-xs flex items-start gap-2.5">
             <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 text-amber-500"></i>
             <div>
               <strong class="font-bold block text-sm">Parece que você já registrou essa compra!</strong>
-              <span>Encontramos um lançamento com o mesmo valor, data e estabelecimento neste mês. Verifique antes de confirmar.</span>
+              <span>Encontramos um lançamento com o mesmo valor, data e estabelecimento neste mês.</span>
             </div>
           </div>
 
-          <!-- Miniatura do Print Lido -->
           <div id="confirm-thumb-wrapper" class="flex items-center gap-3.5 p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
             <img id="confirm-receipt-thumb" src="" alt="Miniatura do Comprovante"
               class="w-14 h-16 object-cover rounded-lg border border-slate-300 dark:border-slate-600 shrink-0" />
@@ -619,16 +685,29 @@
                 ✓ Leitura Concluída
               </span>
               <p class="text-xs text-slate-500 dark:text-slate-300 mt-1">
-                Confira os dados extraídos abaixo e clique em <strong>Confirmar Lançamento</strong>.
+                Confira os dados extraídos abaixo e selecione de quem é a despesa.
               </p>
             </div>
             <button type="button" onclick="openScanModal()"
-              class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-700 hover:opacity-90">
+              class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-700">
               Trocar Print
             </button>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <!-- Responsável pela Despesa (Gabriel ou Mirela) -->
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                De quem é esta despesa? *
+              </label>
+              <select id="confirm-owner" onchange="validateDuplicateOnConfirmForm()"
+                class="w-full px-3.5 py-2.5 rounded-xl text-sm font-bold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="gabriel">👦 Despesas Gabriel</option>
+                <option value="mirela">👩 Despesas Mirela</option>
+                <option value="casal">💑 Ambos / Casal</option>
+              </select>
+            </div>
+
             <!-- Valor Total -->
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
@@ -640,47 +719,47 @@
                 class="w-full px-3.5 py-2.5 rounded-xl text-base font-extrabold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
             </div>
 
-            <!-- Nome do Estabelecimento / App -->
+            <!-- Nome do Estabelecimento / Despesa -->
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                2. Estabelecimento / App *
+                2. Nome da Despesa / Estabelecimento *
               </label>
               <input id="confirm-merchant" type="text" required
                 oninput="autoClassifyConfirmMerchant(this.value)"
-                placeholder="Ex: iFood, Uber, Carrefour..."
+                placeholder="Ex: Apartamento, Nubank, iFood, Uber..."
                 class="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
             </div>
 
-            <!-- Data da Transação -->
+            <!-- Data -->
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                3. Data da Compra *
+                3. Data *
               </label>
               <input id="confirm-date" type="date" required
                 onchange="validateDuplicateOnConfirmForm()"
-                class="w-full px-3.5 py-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                class="w-full px-3.5 py-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
             </div>
 
-            <!-- Hora da Transação -->
+            <!-- Hora -->
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                 Hora
               </label>
               <input id="confirm-time" type="time"
-                class="w-full px-3.5 py-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                class="w-full px-3.5 py-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
             </div>
 
-            <!-- Categoria Sugerida (Auto-classificada) -->
+            <!-- Categoria Sugerida -->
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                4. Categoria / Setor Sugerido *
+                4. Categoria / Setor *
               </label>
               <select id="confirm-sector"
-                class="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                class="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
+                <option value="mercado">🏠 Mercado, Casa & Contas</option>
+                <option value="compras">💳 Cartões, Bancos & Compras</option>
                 <option value="delivery">🍔 Delivery & Alimentação</option>
                 <option value="transporte">🚗 Transporte & Mobilidade</option>
-                <option value="mercado">🛒 Mercado & Casa</option>
-                <option value="compras">🛍️ Compras & Lazer</option>
                 <option value="saude">💊 Saúde & Cuidados</option>
               </select>
             </div>
@@ -691,7 +770,7 @@
                 5. Forma de Pagamento *
               </label>
               <select id="confirm-payment"
-                class="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                class="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
                 <option value="PIX">⚡ PIX</option>
                 <option value="Cartão de Crédito">💳 Cartão de Crédito</option>
                 <option value="Cartão de Débito">🏦 Cartão de Débito</option>
@@ -719,31 +798,59 @@
   </div>
 
   <!-- ====================================================================
-       MODAL DE EDIÇÃO DE RECEITA MENSAL
+       MODAL DE SALÁRIOS DO MÊS (GABRIEL + MIRELA + SOMA DO CASAL)
        ==================================================================== -->
   <div id="income-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
     <form onsubmit="saveMonthlyIncome(event)" class="card-surface w-full max-w-md p-6 space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="font-extrabold text-base">💰 Receita Mensal (<span id="income-modal-month"></span>)</h3>
+        <h3 class="font-extrabold text-base">💰 Salários de <span id="income-modal-month"></span></h3>
         <button type="button" onclick="document.getElementById('income-modal').classList.add('hidden')" class="text-slate-400">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <p class="text-xs text-slate-400">Informe sua renda total do mês (salário, freelas, rendimentos) para calcular seu saldo livre.</p>
-      <input id="income-modal-input" type="number" step="0.01" min="0" required
-        class="w-full px-4 py-2.5 rounded-xl text-lg font-extrabold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
-      <div class="flex justify-end gap-2">
+      <p class="text-xs text-slate-400">
+        Os salários são preenchidos automaticamente ao importar a planilha do mês ou podem ser ajustados aqui:
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-blue-500 mb-1">
+            👦 1. Salário Gabriel (R$)
+          </label>
+          <input id="income-gabriel-input" type="number" step="0.01" min="0"
+            oninput="updateIncomeModalSumPreview()"
+            placeholder="Ex: 3872.00"
+            class="w-full px-4 py-2.5 rounded-xl text-base font-extrabold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-pink-500 mb-1">
+            👩 2. Salário Mirela (R$)
+          </label>
+          <input id="income-mirela-input" type="number" step="0.01" min="0"
+            oninput="updateIncomeModalSumPreview()"
+            placeholder="Ex: 3095.00"
+            class="w-full px-4 py-2.5 rounded-xl text-base font-extrabold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between">
+          <span class="text-xs font-bold text-purple-400">💑 3. Salário dos 2 Juntos:</span>
+          <span id="income-modal-couple-sum" class="text-lg font-extrabold text-emerald-500">R$ 0,00</span>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
         <button type="button" onclick="document.getElementById('income-modal').classList.add('hidden')"
           class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-200 dark:bg-slate-800">Cancelar</button>
         <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
-          Salvar Receita
+          Salvar Salários do Mês
         </button>
       </div>
     </form>
   </div>
 
   <!-- ====================================================================
-       MODAL DE TETO DE GASTOS POR SETOR (ORÇAMENTO INTELIGENTE)
+       MODAL DE TETO DE GASTOS POR SETOR
        ==================================================================== -->
   <div id="budget-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
     <form onsubmit="saveSectorBudget(event)" class="card-surface w-full max-w-md p-6 space-y-4">
@@ -755,7 +862,7 @@
         </button>
       </div>
       <p class="text-xs text-slate-400">
-        A barra do setor ficará <strong>Verde</strong> até 79%, <strong>Amarela</strong> ao atingir 80% e <strong>Vermelha</strong> ao atingir 100% deste limite.
+        A barra do setor ficará <strong>Verde</strong> até 79%, <strong>Amarela</strong> ao atingir 80% e <strong>Vermelha</strong> ao atingir 100%.
       </p>
       <input id="budget-modal-input" type="number" step="1" min="10" required
         class="w-full px-4 py-2.5 rounded-xl text-lg font-extrabold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
@@ -791,9 +898,6 @@
           </label>
           <input id="settings-gemini-key" type="password" placeholder="AIzaSy... (Deixe em branco para usar OCR Local Gratuito)"
             class="w-full px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
-          <p class="text-[11px] text-slate-400 mt-1">
-            O app já possui OCR óptico local integrado (Tesseract.js). Se desejar leitura por IA Generativa, insira sua chave Gemini Flash.
-          </p>
         </div>
 
         <div class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/60 space-y-2.5">
@@ -810,11 +914,6 @@
               <span>Restaurar Backup</span>
               <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
             </label>
-
-            <button type="button" onclick="resetDemoData()"
-              class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-red-500/15 text-red-500 hover:bg-red-500/25 transition">
-              Restaurar Dados de Exemplo
-            </button>
           </div>
         </div>
 
@@ -828,20 +927,19 @@
   </div>
 
   <!-- ====================================================================
-       MODAL DE INTEGRAÇÃO E SINCRONIZAÇÃO COM GOOGLE PLANILHAS (GOOGLE SHEETS)
+       MODAL DE INTEGRAÇÃO E LEITOR DINÂMICO DA PLANILHA (GABRIEL & MIRELA)
        ==================================================================== -->
   <div id="google-sheets-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
     <div class="card-surface w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[92vh] flex flex-col">
 
-      <!-- Cabeçalho do Modal -->
       <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold text-lg">
             📊
           </div>
           <div>
-            <h3 class="font-extrabold text-base">Sincronização Bidirecional • Google Planilhas</h3>
-            <p class="text-xs text-slate-400">Importe gastos da sua planilha para os setores ou envie automaticamente cada compra</p>
+            <h3 class="font-extrabold text-base">Leitor Dinâmico da Planilha • Gabriel & Mirela</h3>
+            <p class="text-xs text-slate-400">Lê automaticamente SALÁRIO GABRIEL, SALÁRIO MIRELA, DESPESAS GABRIEL e DESPESAS MIRELA</p>
           </div>
         </div>
         <button onclick="closeGoogleSheetsModal()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
@@ -854,7 +952,7 @@
         <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <button type="button" id="sheets-tab-btn-import" onclick="switchSheetsModalTab('import')"
             class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition flex items-center justify-center gap-1.5">
-            <span>🔗 1. Link da Planilha</span>
+            <span>🔗 1. Link ou Arquivo (.xlsx/.csv)</span>
           </button>
           <button type="button" id="sheets-tab-btn-paste" onclick="switchSheetsModalTab('paste')"
             class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition flex items-center justify-center gap-1.5">
@@ -870,21 +968,34 @@
       <!-- Corpo Rolável -->
       <div class="p-6 overflow-y-auto space-y-5">
 
-        <!-- ABA 1: IMPORTAR VIA LINK PÚBLICO / CSV DO GOOGLE SHEETS -->
+        <!-- ABA 1: LINK DO GOOGLE SHEETS OU UPLOAD DE ARQUIVO .XLSX / .CSV -->
         <div id="sheets-tab-panel-import" class="space-y-4">
           <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1.5">
             <div class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
               <i data-lucide="check-circle" class="w-4 h-4"></i>
-              <span>Conversão Automática de Link + Prevenção de Duplicatas</span>
+              <span>Leitor Dinâmico do Modelo Lado a Lado (Gabriel & Mirela)</span>
             </div>
             <p class="text-slate-600 dark:text-slate-300">
-              Basta colar o link normal da sua planilha (<code class="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10">.../edit#gid=0</code>) compartilhada como <strong>"Qualquer pessoa com o link pode visualizar"</strong>. O sistema converte automaticamente para leitura CSV e classifica cada linha na tabela do respectivo setor (iFood &rarr; Delivery, Uber &rarr; Transporte, etc.).
+              Extrai automaticamente <strong>SALÁRIO GABRIEL</strong>, <strong>SALÁRIO MIRELA</strong> e as duas tabelas lado a lado (<strong>DESPESAS GABRIEL</strong> e <strong>DESPESAS MIRELA</strong>) até a linha <code>TOTAL DE GASTOS</code> no mês selecionado.
             </p>
+          </div>
+
+          <!-- Upload Direto de Arquivo .XLSX ou .CSV -->
+          <div class="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="text-xs font-bold">📂 Enviar arquivo da planilha (.xlsx, .xls ou .csv)</div>
+              <div class="text-[11px] text-slate-400">Selecione o arquivo salvo do Excel ou Google Planilhas no seu computador</div>
+            </div>
+            <label class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
+              <i data-lucide="upload" class="w-4 h-4"></i>
+              <span>Escolher Arquivo (.xlsx / .csv)</span>
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="handleSpreadsheetFileUpload(event)" class="hidden" />
+            </label>
           </div>
 
           <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              URL da Planilha do Google Sheets (Pública ou CSV)
+              Ou cole o Link da Planilha do Google Sheets (Pública ou CSV)
             </label>
             <input id="sheets-url-input" type="url"
               placeholder="https://docs.google.com/spreadsheets/d/SEU_ID_DA_PLANILHA/edit#gid=0"
@@ -894,51 +1005,51 @@
           <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
             <button type="button" onclick="switchSheetsModalTab('paste')"
               class="text-xs font-semibold text-emerald-500 hover:underline">
-              Sua planilha é privada? Cole as células com Ctrl+V aqui &rarr;
+              Prefere copiar e colar as células (Ctrl+V)? Clique aqui &rarr;
             </button>
             <button type="button" onclick="syncFromGoogleSheetsUrl(null, true)"
               class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition">
               <i data-lucide="download-cloud" class="w-4 h-4"></i>
-              <span>Sincronizar e Importar Agora</span>
+              <span>Ler Planilha e Carregar no Mês</span>
             </button>
           </div>
         </div>
 
-        <!-- ABA 2: COLAR CÉLULAS DIRETAMENTE (CTRL+V DO GOOGLE SHEETS / EXCEL) -->
+        <!-- ABA 2: COLAR CÉLULAS DIRETAMENTE (CTRL+V DO MODELO GABRIEL & MIRELA) -->
         <div id="sheets-tab-panel-paste" class="hidden space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">
-                Cole aqui as linhas copiadas do Google Sheets ou Excel (Ctrl+V)
+                Selecione tudo na sua planilha (Ctrl+A / Ctrl+C) e cole aqui (Ctrl+V)
               </label>
               <p class="text-[11px] text-slate-400">
-                Reconhece colunas: Data | Estabelecimento/Descrição | Categoria/Setor | Forma de Pagamento | Valor
+                Detecta os salários no topo e as colunas lado a lado de DESPESAS GABRIEL e DESPESAS MIRELA
               </p>
             </div>
             <button type="button" onclick="fillSampleGoogleSheetsPaste()"
               class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-500/15 text-purple-500 hover:bg-purple-500/25 transition">
-              ✨ Preencher Exemplo de Teste
+              ✨ Testar Modelo Gabriel & Mirela
             </button>
           </div>
 
-          <textarea id="sheets-paste-textarea" rows="5"
+          <textarea id="sheets-paste-textarea" rows="6"
             oninput="previewPastedSheetCells()"
-            placeholder="Exemplo:&#10;21/10/2026   iFood Burger King   Delivery   PIX   R$ 54,90&#10;20/10/2026   Uber Corrida Centro   Transporte   Cartão de Crédito   R$ 29,40"
+            placeholder="Cole aqui as células copiadas da planilha (com SALÁRIO GABRIEL, SALÁRIO MIRELA, DESPESAS GABRIEL e DESPESAS MIRELA)..."
             class="w-full p-3.5 rounded-xl text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
 
           <!-- Pré-visualização do Mapeamento Inteligente -->
           <div class="rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-3.5">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Pré-visualização do Mapeamento por Setor
+                Leitura Dinâmica (Salários + Despesas Gabriel & Mirela)
               </span>
               <span id="sheets-paste-count" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-500">
-                0 linhas identificadas
+                0 despesas
               </span>
             </div>
             <div id="sheets-paste-preview">
               <div class="text-xs text-slate-400 text-center py-4">
-                Cole as células da sua planilha acima para visualizar o mapeamento automático por setor.
+                Cole acima sua tabela do Google Sheets/Excel para visualizar os salários e gastos detectados.
               </div>
             </div>
           </div>
@@ -947,7 +1058,7 @@
             <button type="button" onclick="importFromPastedSheetCells()"
               class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition">
               <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-              <span>Importar para as Tabelas de Setor</span>
+              <span>Carregar Dinamicamente no Mês Atual</span>
             </button>
           </div>
         </div>
@@ -962,9 +1073,6 @@
               <input id="sheets-webhook-input" type="url"
                 placeholder="https://script.google.com/macros/s/AKfycb.../exec"
                 class="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-              <p class="text-[11px] text-slate-400 mt-1">
-                Sempre que você adicionar um novo gasto no site (via Print OCR ou Manual), ele será enviado automaticamente via <code>POST</code> JSON para sua planilha.
-              </p>
             </div>
 
             <label class="flex items-center gap-2.5 cursor-pointer select-none p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/60">
@@ -995,7 +1103,6 @@
             </div>
           </form>
 
-          <!-- Gaveta Expansível com o Código Pronto do Google Apps Script -->
           <div id="apps-script-code-drawer" class="hidden space-y-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-purple-500">
